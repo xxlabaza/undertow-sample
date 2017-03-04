@@ -1,0 +1,15 @@
+
+version: '2'
+
+services:
+
+  postgres:
+    container_name: postgres
+    build:          './'
+    image:          'test/postgres'
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=test
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin

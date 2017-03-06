@@ -17,7 +17,8 @@
 package com.xxlabaza.test.undertow.user;
 
 import com.xxlabaza.test.undertow.util.SessionUtil;
-import com.xxlabaza.test.undertow.util.SessionUtil.ResultSetMapper;
+import com.xxlabaza.test.undertow.util.functional.Function;
+import java.sql.ResultSet;
 import java.util.List;
 
 /**
@@ -32,7 +33,7 @@ public final class UserRepository {
 
     private final SessionUtil sessionUtil;
 
-    private final ResultSetMapper<User> userMapper;
+    private final Function<ResultSet, User> userMapper;
 
     private UserRepository () {
         sessionUtil = SessionUtil.getInstance();

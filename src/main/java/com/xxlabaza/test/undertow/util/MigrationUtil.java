@@ -19,7 +19,7 @@ package com.xxlabaza.test.undertow.util;
 import static java.util.Collections.emptyMap;
 import static java.util.logging.Level.INFO;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.xxlabaza.test.undertow.util.functional.Pair;
 import java.io.IOException;
@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
@@ -43,12 +43,12 @@ import lombok.extern.java.Log;
 @Log
 public final class MigrationUtil {
 
-    private static final SessionUtil session;
+    private static final SessionUtil SESSION;
 
     private static final Path MIGRATION_FOLDER;
 
     static {
-        session = SessionUtil.getInstance();
+        SESSION = SessionUtil.getInstance();
 
         try {
             URI uri = MigrationUtil.class.getResource("/migration").toURI();
@@ -65,7 +65,7 @@ public final class MigrationUtil {
 
     @SneakyThrows
     public static void migrate () {
-        List<Path> previousVersionFileNames;
+        Set<Path> previousVersionFileNames;
         if (isSchemaVersionTableExists()) {
             log.info("Schema version table exists");
             previousVersionFileNames = checkPreviousVersions();
@@ -73,7 +73,7 @@ public final class MigrationUtil {
             log.info("Schema version table doesn't exist");
             createSchemaVersionTable();
             log.info("Schema version table was created");
-            previousVersionFileNames = Collections.emptyList();
+            previousVersionFileNames = Collections.emptySet();
         }
         log.log(INFO, "Found {0} previous version files", previousVersionFileNames.size());
 
@@ -84,7 +84,7 @@ public final class MigrationUtil {
                 .forEach(it -> {
                     log.log(INFO, "Processing {0} script file", it.getFileName());
                     String content = getFileContent(it);
-                    session.update(content);
+                    SESSION.update(content);
                     createNewSchemaVersion(it);
                 });
     }
@@ -104,7 +104,7 @@ public final class MigrationUtil {
     }
 
     private static boolean isSchemaVersionTableExists () {
-        return session.fetchOne(
+        return SESSION.fetchOne(
                 "SELECT exists( " +
                 "  SELECT * " +
                 "  FROM \"information_schema\".\"tables\" " +
@@ -119,7 +119,7 @@ public final class MigrationUtil {
     }
 
     private static void createSchemaVersionTable () {
-        session.update(
+        SESSION.update(
                 "CREATE TABLE \"schema_version\" ( " +
                 "  \"version_rank\"      INTEGER                     NOT NULL, " +
                 "  \"installed_rank\"    INTEGER                     NOT NULL, " +
@@ -138,8 +138,8 @@ public final class MigrationUtil {
         );
     }
 
-    private static List<Path> checkPreviousVersions () {
-        return session.fetchAll(
+    private static Set<Path> checkPreviousVersions () {
+        return SESSION.fetchAll(
                 "SELECT " +
                 "  \"script\", " +
                 "  \"checksum\" " +
@@ -149,6 +149,7 @@ public final class MigrationUtil {
                 (resultSet) -> new Pair<>(resultSet.getString(1), resultSet.getString(2))
         )
                 .stream()
+                .unordered()
                 .map(it -> {
                     Path file = MIGRATION_FOLDER.resolve(it._1());
                     if (!it._2().equals(getFileChecksum(file))) {
@@ -156,7 +157,7 @@ public final class MigrationUtil {
                     }
                     return file;
                 })
-                .collect(toList());
+                .collect(toSet());
     }
 
     private static void createNewSchemaVersion (Path file) {
@@ -168,7 +169,7 @@ public final class MigrationUtil {
         String description = fileName.substring(index + 2, fileName.length() - 4).replaceAll("_", " ");
         String checksum = getFileChecksum(file);
         String installedBy = System.getProperty("user.name");
-        session.update(
+        SESSION.update(
                 "INSERT INTO \"schema_version\" " +
                 "(\"version_rank\", " +
                 " \"installed_rank\", " +
@@ -188,8 +189,8 @@ public final class MigrationUtil {
     }
 
     @SneakyThrows
-    private static String getFileContent (Path file) {
-        return Files.lines(file).collect(joining());
+    private static String getFileContent (Path path) {
+        return String.join("\n", Files.readAllLines(path));
     }
 
     private MigrationUtil () {

@@ -17,9 +17,10 @@
 package com.xxlabaza.test.undertow.settings;
 
 import com.xxlabaza.test.undertow.util.SessionUtil;
-import com.xxlabaza.test.undertow.util.SessionUtil.ResultSetMapper;
+import com.xxlabaza.test.undertow.util.functional.Function;
 import com.xxlabaza.test.undertow.util.functional.Pair;
 import com.xxlabaza.test.undertow.util.functional.Triple;
+import java.sql.ResultSet;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,9 +36,9 @@ public final class SettingsRepository {
 
     private final SessionUtil sessionUtil;
 
-    private final ResultSetMapper<Pair<String, String>> settingsMapper;
+    private final Function<ResultSet, Pair<String, String>> settingsMapper;
 
-    private final ResultSetMapper<Triple<String, String, String>> allSettingsMapper;
+    private final Function<ResultSet, Triple<String, String, String>> allSettingsMapper;
 
     private SettingsRepository () {
         sessionUtil = SessionUtil.getInstance();

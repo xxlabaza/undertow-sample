@@ -16,6 +16,7 @@
 
 package com.xxlabaza.test.undertow.util;
 
+import com.xxlabaza.test.undertow.util.functional.Function;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -68,20 +69,20 @@ public final class SessionUtil {
         checkDataSource();
     }
 
-    public <T> T fetchOne (String query, ResultSetMapper<T> mapper, Object... args) {
+    public <T> T fetchOne (String query, Function<ResultSet, T> mapper, Object... args) {
         return connect(query, (statement) -> {
                    ResultSet resultSet = statement.executeQuery();
                    resultSet.next();
-                   return mapper.map(resultSet);
+                   return mapper.apply(resultSet);
                }, args);
     }
 
-    public <T> List<T> fetchAll (String query, ResultSetMapper<T> mapper, Object... args) {
+    public <T> List<T> fetchAll (String query, Function<ResultSet, T> mapper, Object... args) {
         return connect(query, (statement) -> {
                    List<T> result = new ArrayList<>();
                    ResultSet resultSet = statement.executeQuery();
                    while (resultSet.next()) {
-                       result.add(mapper.map(resultSet));
+                       result.add(mapper.apply(resultSet));
                    }
                    return result;
                }, args);
@@ -91,11 +92,11 @@ public final class SessionUtil {
         return connect(query, (statement) -> statement.executeUpdate(), args);
     }
 
-    public <T> T update (String query, ResultSetMapper<T> mapper, Object... args) {
+    public <T> T update (String query, Function<ResultSet, T> mapper, Object... args) {
         return connect(query, (statement) -> {
                    ResultSet resultSet = statement.executeQuery();
                    resultSet.next();
-                   return mapper.map(resultSet);
+                   return mapper.apply(resultSet);
                }, args);
     }
 
@@ -109,21 +110,11 @@ public final class SessionUtil {
     }
 
     @SneakyThrows
-    private <T> T connect (String query, ConnectionAction<T> action, Object... args) {
+    private <T> T connect (String query, Function<PreparedStatement, T> action, Object... args) {
         try (Connection connection = dataSource.getConnection()) {
             PreparedStatement prepareStatement = connection.prepareStatement(query);
             PrepareStatementUtil.prepareStatement(prepareStatement, args);
-            return action.invoke(prepareStatement);
+            return action.apply(prepareStatement);
         }
-    }
-
-    public interface ResultSetMapper<T> {
-
-        T map (ResultSet resultSet) throws Exception;
-    }
-
-    private interface ConnectionAction<T> {
-
-        T invoke (PreparedStatement preparedStatement) throws Exception;
     }
 }

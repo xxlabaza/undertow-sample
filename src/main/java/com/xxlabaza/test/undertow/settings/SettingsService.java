@@ -39,16 +39,21 @@ public final class SettingsService {
     }
 
     public Map<String, String> create (String uid, String key, String value) {
-        return repository.save(uid, key, value).stream().collect(toMap(Pair::_1, Pair::_2));
+        return repository.save(uid, key, value).stream()
+                .unordered()
+                .collect(toMap(Pair::_1, Pair::_2));
     }
 
     public Map<String, Map<String, String>> findAll () {
         return repository.findAll().stream()
+                .unordered()
                 .collect(groupingBy(Triple::_1, toMap(Triple::_2, Triple::_3)));
     }
 
     public Map<String, String> findAll (String uid) {
-        return repository.findAll(uid).stream().collect(toMap(Pair::_1, Pair::_2));
+        return repository.findAll(uid).stream()
+                .unordered()
+                .collect(toMap(Pair::_1, Pair::_2));
     }
 
     public void delete (String uid) {
